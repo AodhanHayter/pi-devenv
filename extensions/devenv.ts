@@ -36,7 +36,8 @@ export default async function (pi: ExtensionAPI) {
     event.input.command = wrapCommand(event.input.command, ctx.cwd);
   });
 
-  pi.on("user_bash", () => {
+  pi.on("user_bash", (event) => {
+    if (wrapCommand(event.command, event.cwd) === event.command) return;
     const local = createLocalBashOperations();
     return {
       operations: {
