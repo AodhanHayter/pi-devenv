@@ -4,6 +4,9 @@
   "description": "Run Pi bash commands inside devenv shell when devenv.nix is present.",
   "license": "MIT",
   "type": "module",
+  "engines": {
+    "node": ">=22.19.0"
+  },
   "keywords": [
     "pi-package",
     "pi-extension",

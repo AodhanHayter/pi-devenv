@@ -27,8 +27,4 @@
       pass_filenames = false;
     };
   };
-
-  enterTest = ''
-    node --experimental-strip-types --test test.ts
-  '';
 }
