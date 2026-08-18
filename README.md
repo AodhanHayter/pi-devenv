@@ -21,8 +21,10 @@ The bash call display stays the original command. Session stores LLM args; wrap 
 ## Test
 
 ```bash
-npm test
+devenv test
 ```
+
+`devenv shell` installs pre-commit hooks: biome (format + lint), `tsc --noEmit`, and unit tests.
 
 ## License
 

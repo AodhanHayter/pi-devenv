@@ -4,14 +4,27 @@
   "description": "Run Pi bash commands inside devenv shell when devenv.nix is present.",
   "license": "MIT",
   "type": "module",
-  "keywords": ["pi-package", "pi-extension", "devenv"],
+  "keywords": [
+    "pi-package",
+    "pi-extension",
+    "devenv"
+  ],
   "scripts": {
-    "test": "node --experimental-strip-types --test test.ts"
+    "test": "node --experimental-strip-types --test test.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "format": "biome check --write ."
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*"
   },
   "pi": {
-    "extensions": ["./extensions/devenv.ts"]
+    "extensions": [
+      "./extensions/devenv.ts"
+    ]
+  },
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "^0.84.2",
+    "@types/node": "^22.20.1"
   }
 }
