@@ -10,7 +10,13 @@
   languages.typescript.enable = true;
 
   git-hooks.hooks = {
-    biome.enable = true;
+    biome = {
+      enable = true;
+      excludes = [
+        "^\\.pi/"
+        "^tools/oxlint/anti-slop/"
+      ];
+    };
     nixfmt.enable = true;
     tsc = {
       enable = true;

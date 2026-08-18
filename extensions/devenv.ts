@@ -1,6 +1,9 @@
 import { realpathSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type {
+  BashToolCallEvent,
+  ExtensionAPI,
+} from "@earendil-works/pi-coding-agent";
 
 function canonicalPath(path: string): string | null {
   try {
@@ -40,6 +43,21 @@ export function wrapCommand(command: string, cwd: string): string {
   return `devenv --no-tui -q shell -- bash -c ${shQuote(command)}`;
 }
 
+interface ToolOwnership {
+  name: string;
+  sourceInfo: { source: string };
+}
+
+export function rewriteBashToolCall(
+  event: BashToolCallEvent,
+  cwd: string,
+  tools: readonly ToolOwnership[],
+): void {
+  const bashTool = tools.find((tool) => tool.name === "bash");
+  if (bashTool && bashTool.sourceInfo.source !== "builtin") return;
+  event.input.command = wrapCommand(event.input.command, cwd);
+}
+
 export default async function (pi: ExtensionAPI) {
   const { createLocalBashOperations, isToolCallEventType } = await import(
     "@earendil-works/pi-coding-agent"
@@ -47,10 +65,7 @@ export default async function (pi: ExtensionAPI) {
 
   pi.on("tool_call", (event, ctx) => {
     if (!isToolCallEventType("bash", event)) return;
-    const bashTool = pi.getAllTools().find((tool) => tool.name === "bash");
-    if (bashTool && bashTool.sourceInfo.source !== "builtin") return;
-    if (typeof event.input.command !== "string") return;
-    event.input.command = wrapCommand(event.input.command, ctx.cwd);
+    rewriteBashToolCall(event, ctx.cwd, pi.getAllTools());
   });
 
   pi.on("user_bash", (event) => {

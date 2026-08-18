@@ -10,9 +10,10 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "node:test";
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import devenvExtension, {
+import type { BashToolCallEvent } from "@earendil-works/pi-coding-agent";
+import {
   findDevenvRoot,
+  rewriteBashToolCall,
   wrapCommand,
 } from "./extensions/devenv.ts";
 
@@ -73,36 +74,17 @@ test("wrap only for a different devenv root", () => {
   }
 });
 
-test("do not rewrite an extension-owned bash tool", async () => {
-  const prev = process.env.DEVENV_ROOT;
-  delete process.env.DEVENV_ROOT;
-  const handlers = new Map<
-    string,
-    (event: unknown, context: unknown) => unknown
-  >();
-  const pi = {
-    on(name: string, handler: (event: unknown, context: unknown) => unknown) {
-      handlers.set(name, handler);
-    },
-    getAllTools() {
-      return [{ name: "bash", sourceInfo: { source: "test-extension" } }];
-    },
-  } as unknown as ExtensionAPI;
+test("do not rewrite an extension-owned bash tool", () => {
+  const event: BashToolCallEvent = {
+    type: "tool_call",
+    toolCallId: "test",
+    toolName: "bash",
+    input: { command: "echo hi" },
+  };
 
-  try {
-    await devenvExtension(pi);
-    const event = {
-      type: "tool_call",
-      toolCallId: "test",
-      toolName: "bash",
-      input: { command: "echo hi" },
-    };
-    const handler = handlers.get("tool_call");
-    assert.ok(handler);
-    await handler(event, { cwd: process.cwd() });
-    assert.equal(event.input.command, "echo hi");
-  } finally {
-    if (prev === undefined) delete process.env.DEVENV_ROOT;
-    else process.env.DEVENV_ROOT = prev;
-  }
+  rewriteBashToolCall(event, process.cwd(), [
+    { name: "bash", sourceInfo: { source: "test-extension" } },
+  ]);
+
+  assert.equal(event.input.command, "echo hi");
 });
