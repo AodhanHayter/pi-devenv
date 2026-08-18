@@ -1,0 +1,16 @@
+{
+  "name": "pi-devenv",
+  "version": "0.1.0",
+  "description": "Run Pi bash commands inside devenv shell when devenv.nix is present.",
+  "type": "module",
+  "keywords": ["pi-package", "pi-extension", "devenv"],
+  "scripts": {
+    "test": "node --experimental-strip-types --test test.ts"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "pi": {
+    "extensions": ["./extensions/devenv.ts"]
+  }
+}
