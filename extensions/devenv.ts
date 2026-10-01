@@ -34,13 +34,29 @@ export function shQuote(s: string): string {
   return `'${s.replaceAll("'", `'\\''`)}'`;
 }
 
-/** Wrap a bash command in `devenv shell --` when cwd is a devenv project. */
+/**
+ * Wrap a bash command in `devenv shell --` when cwd is a devenv project.
+ *
+ * `devenv shell` prints task lifecycle lines to stderr even with `-q`, and
+ * `enterShell` output lands on stdout. The command gets the caller's
+ * stdout/stderr through fds 3 and 4; devenv's own output goes to a log that
+ * the inner shell deletes once it starts. A log that survives means devenv
+ * failed before the command ran, so it is printed. A file, not a pipe, so
+ * background jobs started by `enterShell` cannot hold the command open.
+ */
 export function wrapCommand(command: string, cwd: string): string {
   const root = findDevenvRoot(cwd);
   if (!root || canonicalPath(process.env.DEVENV_ROOT ?? "") === root)
     return command;
   // ponytail: devenv shell per command; cache print-dev-env if cold start hurts
-  return `devenv --no-tui -q shell -- bash -c ${shQuote(command)}`;
+  const inner = `rm -f -- "$1"; set --; exec 1>&3 2>&4 3>&- 4>&-\n${command}`;
+  return [
+    `__pi_devenv_log=$(mktemp "\${TMPDIR:-/tmp}/pi-devenv.XXXXXX") || exit 1`,
+    "__pi_devenv_status=0",
+    `devenv --no-tui -q shell -- bash -c ${shQuote(inner)} bash "$__pi_devenv_log" 3>&1 4>&2 >/dev/null 2>"$__pi_devenv_log" || __pi_devenv_status=$?`,
+    `if [ -e "$__pi_devenv_log" ]; then cat -- "$__pi_devenv_log" >&2; rm -f -- "$__pi_devenv_log"; fi`,
+    'exit "$__pi_devenv_status"',
+  ].join("\n");
 }
 
 interface ToolOwnership {

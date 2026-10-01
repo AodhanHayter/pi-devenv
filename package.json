@@ -14,6 +14,7 @@
   ],
   "scripts": {
     "test": "node --experimental-strip-types --test test.ts",
+    "e2e": "node --experimental-strip-types --test e2e.ts",
     "typecheck": "tsc --noEmit",
     "lint": "biome check . && oxlint .",
     "format": "biome check --write ."
@@ -27,6 +28,7 @@
     ]
   },
   "devDependencies": {
+    "@earendil-works/pi-ai": "^0.84.2",
     "@earendil-works/pi-coding-agent": "^0.84.2",
     "@oxlint/plugins": "1.78.0",
     "@types/node": "^22.20.1",

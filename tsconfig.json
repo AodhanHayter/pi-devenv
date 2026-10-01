@@ -10,5 +10,5 @@
     "types": ["node"],
     "allowImportingTsExtensions": true
   },
-  "include": ["extensions/**/*.ts", "test.ts"]
+  "include": ["extensions/**/*.ts", "test.ts", "e2e.ts"]
 }
