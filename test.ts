@@ -54,6 +54,11 @@ case "$1" in
     echo "$here" >> "$allowed"
     echo "devenv: allowed $here" >&2
     exit 0 ;;
+  revoke)
+    grep -vxF "$here" "$allowed" > "$allowed.new"
+    mv "$allowed.new" "$allowed"
+    echo "devenv: revoked $here" >&2
+    exit 0 ;;
 esac
 while [ $# -gt 0 ] && [ "$1" != shell ] && [ "$1" != eval ]; do shift; done
 if [ "$1" = eval ]; then
@@ -412,4 +417,37 @@ test("eval classifies the commands a model ran", () => {
   assert.equal(runsCommand("migrate", "migrate"), true);
   assert.equal(runsCommand("cd /p && migrate --dry-run", "migrate"), true);
   assert.equal(runsCommand("python migrate.py", "migrate"), false);
+});
+
+test("/devenv shows status and allows or revokes the project", async (t) => {
+  const { project, agentDir, allowList } = fixture(t);
+  const pi = await startSession(project, agentDir, () => "Not now");
+  t.after(() => pi.session.dispose());
+  const run = async (command: string) => {
+    pi.notes.length = 0;
+    await pi.session.prompt(command);
+    return pi.notes.join("\n");
+  };
+
+  assert.equal(
+    await run("/devenv"),
+    `devenv project: ${project}\nCommands run outside devenv (not allowed; /devenv allow).`,
+  );
+  assert.equal(await run("/devenv allow"), `devenv: allowed ${project}`);
+  assert.equal(readFileSync(allowList, "utf8"), `${project}\n`);
+  assert.match(
+    await run("/devenv status"),
+    /Commands run in the devenv shell\.$/,
+  );
+  assert.equal(await run("/devenv revoke"), `devenv: revoked ${project}`);
+  assert.equal(
+    await run("/devenv bogus"),
+    "Usage: /devenv [status|allow|revoke]",
+  );
+
+  // Revoked this session: commands run outside devenv without asking again.
+  assert.deepEqual(await pi.prompt(["echo $IN_FAKE_DEVENV"]), [
+    { text: "\n", isError: false },
+  ]);
+  assert.deepEqual(pi.asked, []);
 });

@@ -30,6 +30,8 @@ export interface TestSession {
   systemPrompts: string[];
   /** Titles of `ctx.ui.select` dialogs the extension opened. */
   asked: string[];
+  /** Messages the extension showed with `ctx.ui.notify`. */
+  notes: string[];
   /** One model turn that calls bash with each command, in parallel. */
   prompt(commands: readonly string[]): Promise<ToolOutcome[]>;
   /** A user `!` command, routed through the extension's user_bash handler. */
@@ -65,6 +67,7 @@ export async function startSession(
   });
 
   const asked: string[] = [];
+  const notes: string[] = [];
   if (choose) {
     await session.bindExtensions({
       uiContext: {
@@ -72,6 +75,9 @@ export async function startSession(
         select: async (title) => {
           asked.push(title);
           return choose(title);
+        },
+        notify: (message) => {
+          notes.push(message);
         },
       },
     });
@@ -85,6 +91,7 @@ export async function startSession(
     session,
     systemPrompts,
     asked,
+    notes,
     async prompt(commands) {
       turn += 1;
       const ids = commands.map((_, i) => `t${turn}-${i}`);
