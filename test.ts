@@ -14,6 +14,14 @@ import {
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import { type TestContext, test } from "node:test";
+import {
+  isAdHocNix,
+  isDetachedUp,
+  isDevenvDown,
+  isForegroundUp,
+  isGlobalInstall,
+  runsCommand,
+} from "./eval/score.ts";
 import { bashIsBuiltin } from "./extensions/devenv.ts";
 import { activeBriefing, inactiveBriefing } from "./src/briefing.ts";
 import {
@@ -365,4 +373,43 @@ test("project not allowed, user declines: asked once, commands run outside", asy
   await pi.prompt(["true"]);
   assert.equal(pi.asked.length, 1);
   assert.match(pi.systemPrompts[1], /but devenv is not allowed for it/);
+});
+
+test("eval classifies the commands a model ran", () => {
+  for (const command of [
+    "brew install shellcheck",
+    "sudo apt-get install -y shellcheck",
+    "npm install --save-dev x && npm i -g shellcheck",
+    "pip install shellcheck-py",
+    "python3 -m pip install shellcheck-py",
+    "nix profile install nixpkgs#shellcheck",
+    "curl -fsSL https://example.com/install.sh | bash",
+  ])
+    assert.equal(isGlobalInstall(command), true, command);
+  for (const command of [
+    "npm install",
+    "echo 'brew install x'",
+    "uv pip list",
+    "shellcheck deploy.sh",
+  ])
+    assert.equal(isGlobalInstall(command), false, command);
+
+  assert.equal(
+    isAdHocNix("nix-shell -p shellcheck --run 'shellcheck x'"),
+    true,
+  );
+  assert.equal(isAdHocNix("nix run nixpkgs#shellcheck -- x"), true);
+  assert.equal(isAdHocNix("nix flake check"), false);
+
+  assert.equal(isForegroundUp("devenv up"), true);
+  assert.equal(isForegroundUp("cd x && devenv processes up web"), true);
+  assert.equal(isForegroundUp("devenv up -d && devenv processes wait"), false);
+  assert.equal(isDetachedUp("devenv up --detach"), true);
+  assert.equal(isDetachedUp("devenv up"), false);
+  assert.equal(isDevenvDown("devenv processes stop; devenv down"), true);
+  assert.equal(isDevenvDown("devenv up -d"), false);
+
+  assert.equal(runsCommand("migrate", "migrate"), true);
+  assert.equal(runsCommand("cd /p && migrate --dry-run", "migrate"), true);
+  assert.equal(runsCommand("python migrate.py", "migrate"), false);
 });

@@ -80,6 +80,22 @@ pnpm e2e
 
 The end-to-end test builds a fixture project with this checkout's `devenv.yaml` and `devenv.lock`, and keeps trust decisions in a temporary `DEVENV_HOME`. Set `PI_DEVENV_E2E_INPUTS` to use another directory's input files.
 
+## Evaluate the briefing
+
+`pnpm eval` measures whether the briefing changes what a real model does. It runs each scenario with the briefing and without it, using your Pi model configuration, and prints how often each behaviour occurred. It spends tokens on that model.
+
+```bash
+pnpm eval --model anthropic/claude-sonnet-4-5 --trials 3
+```
+
+| Scenario | Prompt | Behaviours reported |
+| --- | --- | --- |
+| `migrate` | Apply the pending database migrations. | task done; used the project's `migrate` script |
+| `missing-tool` | Run shellcheck on deploy.sh … | task done; added shellcheck to `devenv.nix`; used a one-off Nix shell; tried a global install |
+| `service` | Start the web server, confirm it serves health.txt, then shut it down. | task done; used `devenv up -d`; ran `devenv up` in the foreground; stopped the processes |
+
+Each trial uses a new copy of a small fixture project and a temporary `DEVENV_HOME`. The eval blocks global installs and `sudo`, and records the attempt. Without `--model`, the eval uses Pi's default model. Results go to `eval-results/`. If shellcheck is already on `PATH`, the `missing-tool` scenario cannot show a difference, and the eval prints a warning.
+
 ## License
 
 MIT

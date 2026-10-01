@@ -15,6 +15,7 @@
   "scripts": {
     "test": "node --experimental-strip-types --test test.ts",
     "e2e": "node --experimental-strip-types --test e2e.ts",
+    "eval": "node --experimental-strip-types eval/run.ts",
     "typecheck": "tsc --noEmit",
     "lint": "biome check . && oxlint .",
     "format": "biome check --write ."
